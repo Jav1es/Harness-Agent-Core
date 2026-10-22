@@ -1,0 +1,28 @@
+{
+  "mcp_stdio": {
+    "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "args": [
+      "tests/mcp_server_stub.py"
+    ],
+    "timeout": 15
+  },
+  "tool_whitelist": [
+    "echo"
+  ],
+  "tools": {
+    "echo": {
+      "description": "Echo text",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ]
+      }
+    }
+  }
+}

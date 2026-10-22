@@ -1,0 +1,96 @@
+# Harness-Agent-Core configuration
+# Load with: harness-core run "..." --config examples/harness.yaml
+# Priority: defaults -> this file -> HARNESS_* environment variables.
+
+max_retries: 3
+repeat_threshold: 1     # the 2nd occurrence of the same BLOCK fingerprint trips the breaker
+token_budget: 0         # 0 disables the token ceiling
+
+tool_whitelist:
+  - fetch_order
+  - compute_total
+  - write_api
+
+high_risk_tools:
+  - write_api
+  - delete_resource
+
+tools:
+  fetch_order:
+    description: Read one order from the order service
+    input_schema:
+      type: object
+      required: [order_id]
+      additionalProperties: false
+      properties:
+        order_id:
+          type: string
+          minLength: 3
+
+  compute_total:
+    description: Deterministically compute the payable total
+    input_schema:
+      type: object
+      required: [subtotal, tax_rate]
+      additionalProperties: false
+      properties:
+        subtotal:
+          type: number
+          minimum: 0
+        tax_rate:
+          type: number
+          minimum: 0
+          maximum: 1
+
+  write_api:
+    description: Write the settlement back to the ERP (requires human approval)
+    high_risk: true
+    input_schema:
+      type: object
+      required: [order_id, amount]
+      additionalProperties: false
+      properties:
+        order_id:
+          type: string
+          minLength: 3
+        amount:
+          type: number
+          minimum: 0
+
+output_schema:
+  type: object
+  required: [order_id, currency, amount, status]
+  additionalProperties: false
+  properties:
+    order_id:
+      type: string
+      minLength: 3
+    currency:
+      type: string
+      enum: [CNY, USD]
+    amount:
+      type: number
+      minimum: 0
+      maximum: 100000
+    status:
+      type: string
+      enum: [settled, rejected]
+
+forbidden_strings:
+  - TODO
+  - lorem ipsum
+
+forbidden_patterns:
+  - 'sk-[A-Za-z0-9]{8,}'
+
+rules:
+  - name: amount_positive
+    op: gt
+    field: amount
+    value: 0
+    message: 结算金额必须大于 0
+  - name: status_not_unknown
+    op: ne
+    field: status
+    value: unknown
+    message: status 不能是 unknown

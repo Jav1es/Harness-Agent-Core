@@ -1,0 +1,73 @@
+# Harness-Agent-Core CI gate
+# Three steps, three independent signals:
+#   1. the unit/integration suite
+#   2. the built-in scenario suite (exit code is the gate)
+#   3. an install check from a clean wheel
+
+name: harness-core
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      - name: Unit and integration tests
+        run: pytest -q
+
+      - name: Type check (strict)
+        run: |
+          pip install mypy
+          mypy harness_core --ignore-missing-imports --strict
+
+      - name: Scenario suite (CI gate)
+        run: harness-core eval --json eval-report.json
+
+      - name: Both loop drivers agree
+        run: |
+          harness-core run "Settle order ORD-1001" --driver while
+          harness-core run "Settle order ORD-1001" --driver graph
+
+      - name: Record and replay round-trip
+        run: |
+          harness-core run "Settle order ORD-1001" --record /tmp/settle.jsonl
+          harness-core replay /tmp/settle.jsonl --inspect
+          harness-core replay /tmp/settle.jsonl \
+            --task "Settle order ORD-1001" --expect-status FIRST_PASS
+
+      - name: Upload the scenario report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report-py${{ matrix.python-version }}
+          path: eval-report.json
+
+  wheel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build a wheel and install it in a clean environment
+        run: |
+          python -m pip install build
+          python -m build --wheel
+          python -m venv /tmp/clean
+          /tmp/clean/bin/pip install dist/*.whl
+          /tmp/clean/bin/harness-core eval

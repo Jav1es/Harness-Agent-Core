@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Harness-Agent-Core：具备确定性守卫与自愈反馈的多智能体驾驭框架 | 黄家辉</title>
+<meta name="description" content="不依赖特定大模型，通过代码级 Harness 架构把开放式 AI 任务的交付成功率从 70% 提升到 98%。含工具白名单、确定性守卫、自愈反馈循环、熔断与 CI 门禁的完整工程实现。">
+<meta name="author" content="黄家辉">
+<meta name="keywords" content="Harness Engineering, LangGraph, MCP, CI/CD Gate, AI Agent, 确定性守卫, 自愈反馈, 多智能体">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon.png">
+<link rel="canonical" href="https://jav1es.github.io/portfolio/harness-agent-core.html">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:title" content="Harness-Agent-Core：把不可控的 AI 变成可验收的交付">
+<meta property="og:description" content="模型是马，Harness 是缰绳、马鞍与防护栏。工具白名单 · 确定性守卫 · 自愈反馈 · 熔断 · CI 门禁——一套不依赖特定大模型的工程驾驭层。">
+<meta property="og:image" content="https://jav1es.github.io/portfolio/og-image.jpg">
+<meta property="og:site_name" content="黄家辉 · 个人作品集">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:url" content="https://jav1es.github.io/portfolio/harness-agent-core.html">
+<meta property="og:image:alt" content="黄家辉个人作品集封面">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Harness-Agent-Core：把不可控的 AI 变成可验收的交付">
+<meta name="twitter:description" content="模型是马，Harness 是缰绳、马鞍与防护栏。交付成功率 70% → 98%（作品集实验口径）。">
+<meta name="twitter:image" content="https://jav1es.github.io/portfolio/og-image.jpg">
+<meta name="theme-color" content="#fbfbfa">
+
+<link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="./harness-agent-core.css">
+<!-- 外壳兜底：styles.css 缺失时（单独打开本页）由 JS 加 .hx-no-shell 激活 -->
+<link rel="stylesheet" href="./harness-shell-fallback.css">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CreativeWork",
+  "name": "Harness-Agent-Core",
+  "alternateName": "企业级多智能体确定性驾驭引擎",
+  "description": "具备确定性守卫与自愈反馈的多智能体驾驭框架：工具白名单鉴权、确定性硬约束校验、错误栈回喂的自愈循环、max_retries 熔断与人工介入网关、全链路可观测与 CI 门禁。",
+  "author": { "@type": "Person", "name": "黄家辉", "url": "https://jav1es.github.io/portfolio/" },
+  "keywords": "Harness Engineering, LangGraph, MCP, CI/CD Gate, AI Agent",
+  "inLanguage": "zh-CN",
+  "isPartOf": { "@type": "WebSite", "name": "黄家辉 · 个人作品集", "url": "https://jav1es.github.io/portfolio/" }
+}
+</script>
+</head>
+<body>
+  <!-- 3D 背景层（与站点其它页一致） -->
+  <div class="bg-stage" aria-hidden="true">
+    <div class="bg-orb bg-orb-1" data-parallax="0.06"></div>
+    <div class="bg-orb bg-orb-2" data-parallax="-0.04"></div>
+    <div class="bg-orb bg-orb-3"></div>
+    <div class="bg-grid-floor" data-parallax="0.10"></div>
+    <div class="bg-horizon"></div>
+  </div>
+
+  <div class="progress-track" aria-hidden="true"><div class="progress-bar" data-progress></div></div>
+
+  <a class="skip-link" href="#main">跳到主要内容</a>
+
+  <header class="site-nav">
+    <div class="wrap nav-inner">
+      <a class="nav-brand" href="./index.html">黄家辉</a>
+      <button class="nav-toggle" type="button" data-nav-toggle
+              aria-expanded="false" aria-controls="nav-links" aria-label="展开或收起导航菜单">
+        <span class="bars" aria-hidden="true"></span>
+      </button>
+      <nav class="nav-links" id="nav-links" aria-label="主导航">
+        <div class="nav-item has-menu">
+          <a href="./index.html#about">关于</a>
+          <ul class="nav-menu" aria-label="关于">
+            <li><a href="./index.html#about">个人优势</a></li>
+            <li><a href="./index.html#entries">能力结构</a></li>
+          </ul>
+        </div>
+        <div class="nav-item has-menu">
+          <a href="./works.html">核心项目</a>
+          <ul class="nav-menu" aria-label="核心项目">
+            <li><a href="./works.html#group-core">核心案例</a></li>
+            <li><a href="./works.html#group-eng">AI 工程化</a></li>
+            <li><a href="./works.html#group-oss">开源工具</a></li>
+            <li><a href="./works.html#group-lab">实验与 VibeCoding</a></li>
+            <li><a href="./works.html">全部作品模块</a></li>
+          </ul>
+        </div>
+        <div class="nav-item has-menu">
+          <a href="./index.html#experience">我的经历</a>
+          <ul class="nav-menu" aria-label="我的经历">
+            <li><a href="./works.html">作品全景</a></li>
+            <li><a href="./about.html#experience">时间线与背景</a></li>
+          </ul>
+        </div>
+        <div class="nav-item has-menu">
+          <a href="./index.html#skills">技能</a>
+          <ul class="nav-menu" aria-label="技能">
+            <li><a href="./index.html#skills">能力类目</a></li>
+            <li><a href="./about.html#skills">完整技能矩阵</a></li>
+          </ul>
+        </div>
+        <div class="nav-item has-menu">
+          <a href="./index.html#oss">开源</a>
+          <ul class="nav-menu" aria-label="开源">
+            <li><a href="./works.html#group-oss">开源作品模块</a></li>
+            <li><a href="https://github.com/Jav1es" target="_blank" rel="noopener">GitHub 仓库（9 个，全部 MIT）</a></li>
+          </ul>
+        </div>
+        <a href="./index.html#contact">联系</a>
+        <a class="nav-cta" href="./resume.html">下载简历</a>
+      </nav>
+    </div>
+  </header>
+
+<main id="main" class="hx">
+
+  <!-- ==================================================================
+       HERO
+       ================================================================== -->
+  <section class="hx-hero">
+    <div class="wrap hx-hero__in">
+
+      <div>
+        <p class="eyebrow">核心案例 · Harness Engineering</p>
+
+        <h1 class="hx-hero__name">
+          Harness<span class="hx-hero__dash">-</span>Agent<span class="hx-hero__dash">-</span>Core
+        </h1>
+
+        <p class="hx-hero__sub">具备确定性守卫与自愈反馈的多智能体驾驭框架</p>
+
+        <p class="hx-hero__lede">
+          不依赖特定大模型。通过代码级 Harness 架构，把开放式 AI 任务的
+          <b>交付成功率从 70% 提升到 98%</b>（作品集实验口径，见 §05）。
+        </p>
+
+        <p class="hx-hero__metaphor">
+          模型是<b>马</b>：快、有力、但不会自己认路。<br>
+          Harness 是<b>缰绳、马鞍与防护栏</b>：它不产生动力，它决定这份动力往哪走、走多远、什么时候必须停。
+        </p>
+
+        <ul class="hx-stats">
+          <li><b>5</b><span>确定性能力层</span></li>
+          <li><b>4</b><span>代码级守卫函数</span></li>
+          <li><b>50</b><span>次多步骤压测</span></li>
+          <li><b>0</b><span>后端依赖</span></li>
+        </ul>
+
+        <ul class="hx-tags" aria-label="技术标签">
+          <li>Harness Engineering</li>
+          <li>LangGraph</li>
+          <li>MCP</li>
+          <li>CI/CD Gate</li>
+        </ul>
+
+        <div class="btn-row">
+          <a class="btn btn-primary" href="#hx-arch">看架构与代码 →</a>
+          <a class="btn btn-ghost" href="./works.html">返回作品目录</a>
+        </div>
+      </div>
+
+      <!-- 线框「缰绳」：左模型 / 中支架 / 右系统 -->
+      <div class="hx-hero__viz">
+        <canvas width="420" height="300" role="img"
+                aria-label="线框示意图：左侧为非确定性的前沿模型，中间为五层 Harness 支架与校验闸门，右侧为确定性企业系统；模型与系统之间由一条带数据点的缰绳连接，模型直连系统的路径被标为禁止。">
+          线框示意图：前沿模型 → Harness 五层支架 → 确定性企业系统。
+        </canvas>
+        <p class="hx-viz-cap">
+          <b>缰绳不是装饰。</b>它是唯一一条模型通往生产环境的合法路径——
+          每一次工具调用都必须穿过中间的闸门。
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==================================================================
+       §01 痛点
+       ================================================================== -->
+  <section class="hx-sec" id="hx-why">
+    <div class="wrap">
+      <div class="hx-sec__head">
+        <p class="hx-sec__no">01</p>
+        <div>
+          <h2>为什么直接调大模型，总会<em>翻车</em></h2>
+          <p>
+            把一个前沿模型接上业务系统，Demo 通常只要一个下午；把它变成能上生产的系统，通常要三个月——而且大部分时间不是在调模型，是在补它留下的坑。
+          </p>
+          <p>
+            下面五种失败模式不是模型「能力不够」，而是<strong>缺了一层结构化的驾驭层</strong>。换更强的模型不会让它们消失，只会让它们更贵。
+          </p>
+        </div>
+      </div>
+
+      <div class="hx-scope hx-scope--naming">
+        <p class="hx-scope__h"><span>划界</span>「Harness」这个词已经有主了，先把关系说清楚</p>
+        <p class="hx-scope__lead">
+          2026 年 Pydantic AI 发布了官方能力库 <code>pydantic-ai-harness</code>，也叫 Harness。名字撞了，这里主动交代：
+        </p>
+        <dl>
+          <dt>它在做</dt>
+          <dd><b>给 agent 装能力</b>——<code>Coder</code>、<code>CodeMode</code>、<code>SubAgents</code>、<code>Memory</code>、<code>ToolGuardrail</code>、spend limits，通过 <code>Agent(capabilities=[...])</code> 组合进去。方向是<b>加</b>。</dd>
+
+          <dt>本作在做</dt>
+          <dd><b>约束 agent 别乱来</b>——裁决这次调用能不能执行、失败了怎么带着现场回喂、重复失败什么时候熔断、什么时候挂起叫人。方向是<b>减</b>。</dd>
+
+          <dt>四个关键差异</dt>
+          <dd>
+            <b>工具治理</b>：它的 <code>ToolGuardrail</code> 判「这个工具允不允许用」；本作判「<b>这一次调用</b>允不允许执行」——读 <code>ctx</code> 里的 scopes、金额、风险等级。<br>
+            <b>失败处理</b>：它数重试次数与花费；本作用 <code>semantic_fingerprint</code> 判「这次失败是不是和上次<b>同一个</b>」——同一个就早停，不烧满 3 次。<br>
+            <b>人机协同</b>：它支持运行中向人提问；本作在失败累计到阈值时<b>熔断并挂起</b>，保留完整失败现场再叫人。<br>
+            <b>评测</b>：它无内置评测；本作把「确定性校验（零 LLM）」与「语义校验（LLM）」<b>显式分成两层</b>，不让后者污染前者。
+          </dd>
+
+          <dt>一句实话</dt>
+          <dd><code>pydantic-ai-harness</code> 比本作成熟得多，也有真实用户。<b>本作不是它的替代品，也不基于它</b>——两者解决的是相反方向的问题：一个在给 agent 加自由度，一个在给 agent 加约束。<b>命名纯属巧合，本项目与 Pydantic AI 无任何关联。</b></dd>
+        </dl>
+      </div>
+
+      <ol class="hx-fails hx-reveal">
+        <li class="hx-fail">
+          <h3>幻觉当成事实<span class="en">Hallucination</span></h3>
+          <p>模型把「没查到」和「不存在」说成同一件事，输出一段格式完美、来源虚构的结论。人读起来毫无破绽，直到业务方拿去用了。</p>
+          <code class="hx-fail__sym">confidence=0.93  source=None</code>
+        </li>
+        <li class="hx-fail">
+          <h3>越权调用工具<span class="en">Over-privileged Tool Call</span></h3>
+          <p>提示词注入让模型去调一个它本不该碰的写接口。工具描述是模型可读的文本，文本就能被改写；而权限判断如果也交给模型，等于没有判断。</p>
+          <code class="hx-fail__sym">tool=settlement.write  amount=8,400,000</code>
+        </li>
+        <li class="hx-fail">
+          <h3>格式漂移<span class="en">Schema Drift</span></h3>
+          <p>同一份 Prompt，今天返回合法 JSON，明天多一句「好的，以下是结果：」。下游解析器直接抛异常，而错误发生在离模型很远的地方。</p>
+          <code class="hx-fail__sym">JSONDecodeError: Expecting value: line 1 column 1</code>
+        </li>
+        <li class="hx-fail">
+          <h3>死循环烧 Token<span class="en">Retry Storm</span></h3>
+          <p>失败了重试、重试了还失败，没人设上限。一晚上跑掉一个月的额度，第二天早上你只拿到一堆看起来很像的失败日志。</p>
+          <code class="hx-fail__sym">attempt=27  tokens_spent=1,284,900  status=retrying</code>
+        </li>
+        <li class="hx-fail">
+          <h3>不可观测<span class="en">No Trace</span></h3>
+          <p>出了问题只能靠翻聊天记录猜是哪一步坏的。没有 span、没有耗时、没有 token 账本，复盘就只能靠回忆。</p>
+          <code class="hx-fail__sym">trace_id=&lt;missing&gt;  spans=0</code>
+        </li>
+      </ol>
+
+      <div class="hx-verdict">
+        这五件事的共同点是：<b>它们都不是模型的问题，是架构的问题。</b>
+        <span>
+          模型负责「生成候选」，架构负责「决定什么能落地」。把这两件事混在一起做，才会出现「Demo 很惊艳、上线就事故」。
+          Harness 要做的，就是把后半句从模型手里拿回来，写进代码。
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================================================================
+       §02 架构
+       ================================================================== -->
+  <section class="hx-sec" id="hx-arch">
+    <div class="wrap">
+      <div class="hx-sec__head">
+        <p class="hx-sec__no">02</p>
+        <div>
+          <h2>架构：模型<em>永远不直连</em>业务系统</h2>
+          <p>
+            整张图只有一条合法路径：<code>Frontier Model</code> ⇄ <code>Harness Layer</code> ⇄ <code>Deterministic Enterprise System</code>。
+            上面那条虚线是所有人默认会走、也是所有事故的来源——模型直连数据库。
+          </p>
+        </div>
+      </div>
+
+      <div class="hx-arch" id="hx-arch-fig">
+        <div class="hx-arch__scroll">
+          <svg viewBox="0 0 900 440" role="img" aria-labelledby="hxArchTitle hxArchDesc" preserveAspectRatio="xMidYMid meet">
+            <title id="hxArchTitle">Harness-Agent-Core 架构图</title>
+            <desc id="hxArchDesc">
+              左侧是非确定性的前沿模型，中间是五层 Harness 支架（工具编排、确定性守卫、自愈反馈、熔断与人工介入、可观测与 CI 门禁），
+              右侧是确定性的企业系统。模型与企业系统之间由双向箭头连接，所有调用都必须穿过 Harness。
+              图上方另有一条被划掉的虚线，表示模型直连企业系统的路径被禁止。
+            </desc>
+
+            <defs>
+              <marker id="hxArrowBlue" viewBox="0 0 10 10" refX="9" refY="5"
+                      markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="var(--hx-blue)"></path>
+              </marker>
+              <marker id="hxArrowGrey" viewBox="0 0 10 10" refX="9" refY="5"
+                      markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="var(--hx-line2)"></path>
+              </marker>
+            </defs>
+
+            <!-- ===== 被禁止的直连路径 ===== -->
+            <path class="flow dash" d="M176 150 Q450 8 724 150"
+                  stroke="var(--hx-amber)" stroke-dasharray="6 6" opacity=".55"
+                  marker-end="url(#hxArrowGrey)"></path>
+            <circle cx="450" cy="69" r="13" fill="var(--hx-card)"></circle>
+            <text x="450" y="74" text-anchor="middle" font-size="15"
+                  fill="var(--hx-amber)" font-weight="700">✕</text>
+            <text x="450" y="40" text-anchor="middle" font-size="10.5" fill="var(--hx-txt3)">
+              模型直连业务系统：不可审计 · 不可回滚 · 无重试 · 无权限边界
+            </text>
+
+            <!-- ===== 三个区 ===== -->
+            <g class="zone">
+              <rect x="24" y="112" width="176" height="300" rx="10"></rect>
+              <rect x="248" y="112" width="404" height="300" rx="10"></rect>
+              <rect x="700" y="112" width="176" height="300" rx="10"></rect>
+            </g>
+
+            <text class="zone-label" x="112" y="104" text-anchor="middle" font-size="10"
+                  font-family="ui-monospace, Consolas, monospace" letter-spacing="1">NON-DETERMINISTIC</text>
+            <text class="zone-label" x="450" y="104" text-anchor="middle" font-size="10"
+                  font-family="ui-monospace, Consolas, monospace" letter-spacing="1">HARNESS LAYER · LangGraph StateGraph</text>
+            <text class="zone-label" x="788" y="104" text-anchor="middle" font-size="10"
+                  font-family="ui-monospace, Consolas, monospace" letter-spacing="1">DETERMINISTIC</text>
+
+            <!-- ===== 左：Frontier Model ===== -->
+            <rect x="44" y="196" width="136" height="100" rx="8"
+                  fill="var(--hx-card2)" stroke="var(--hx-line2)"></rect>
+            <text x="112" y="230" text-anchor="middle" font-size="14" font-weight="700"
+                  fill="var(--hx-txt)">Frontier Model</text>
+            <text x="112" y="250" text-anchor="middle" font-size="11" fill="var(--hx-txt3)">前沿大模型</text>
+            <text x="112" y="274" text-anchor="middle" font-size="10"
+                  font-family="ui-monospace, Consolas, monospace" fill="var(--hx-amber)">概率输出</text>
+
+            <!-- ===== 右：Enterprise System ===== -->
+            <rect x="720" y="196" width="136" height="100" rx="8"
+                  fill="var(--hx-card2)" stroke="var(--hx-line2)"></rect>
+            <text x="788" y="226" text-anchor="middle" font-size="13" font-weight="700"
+                  fill="var(--hx-txt)">Enterprise System</text>
+            <text x="788" y="245" text-anchor="middle" font-size="11" fill="var(--hx-txt3)">ERP / CRM / 数据</text>
+            <text x="788" y="274" text-anchor="middle" font-size="10"
+                  font-family="ui-monospace, Consolas, monospace" fill="var(--hx-green)">事务 · 可回滚</text>
+
+            <!-- ===== 中间：五层 ===== -->
+            <g class="lyr" data-layer="0">
+              <rect class="body" x="268" y="137" width="364" height="42" rx="6"></rect>
+              <rect class="bar" x="268" y="137" width="3" height="42" rx="1.5"></rect>
+              <text x="286" y="155" font-size="13" font-weight="700">L1 · Tool Orchestration</text>
+              <text class="en" x="286" y="170" font-size="9.5"
+                    font-family="ui-monospace, Consolas, monospace">MCP 白名单 · Schema 校验 · 权限边界 · 上下文隔离</text>
+            </g>
+
+            <g class="lyr" data-layer="1">
+              <rect class="body" x="268" y="189" width="364" height="42" rx="6"></rect>
+              <rect class="bar" x="268" y="189" width="3" height="42" rx="1.5"></rect>
+              <text x="286" y="207" font-size="13" font-weight="700">L2 · Deterministic Guardrails</text>
+              <text class="en" x="286" y="222" font-size="9.5"
+                    font-family="ui-monospace, Consolas, monospace">Linter · JSON Schema · 业务合规 · 纯函数可单测</text>
+            </g>
+
+            <g class="lyr" data-layer="2">
+              <rect class="body" x="268" y="241" width="364" height="42" rx="6"></rect>
+              <rect class="bar" x="268" y="241" width="3" height="42" rx="1.5"></rect>
+              <text x="286" y="259" font-size="13" font-weight="700">L3 · Self-Correction Loop</text>
+              <text class="en" x="286" y="274" font-size="9.5"
+                    font-family="ui-monospace, Consolas, monospace">error_stack → 结构化回喂 → 重生成 → 复测</text>
+            </g>
+
+            <g class="lyr" data-layer="3">
+              <rect class="body" x="268" y="293" width="364" height="42" rx="6"></rect>
+              <rect class="bar" x="268" y="293" width="3" height="42" rx="1.5"></rect>
+              <text x="286" y="311" font-size="13" font-weight="700">L4 · HITL &amp; Circuit Breaker</text>
+              <text class="en" x="286" y="326" font-size="9.5"
+                    font-family="ui-monospace, Consolas, monospace">max_retries · 高风险挂起 · Webhook 审批</text>
+            </g>
+
+            <g class="lyr" data-layer="4">
+              <rect class="body" x="268" y="345" width="364" height="42" rx="6"></rect>
+              <rect class="bar" x="268" y="345" width="3" height="42" rx="1.5"></rect>
+              <text x="286" y="363" font-size="13" font-weight="700">L5 · Observability &amp; CI Gate</text>
+              <text class="en" x="286" y="378" font-size="9.5"
+                    font-family="ui-monospace, Consolas, monospace">Token / 耗时 / Span · 回归门禁 · 失败即阻断</text>
+            </g>
+
+            <!-- ===== 左右双向箭头 ===== -->
+            <path class="flow is-live" d="M200 216 L266 216" marker-end="url(#hxArrowBlue)"></path>
+            <path class="flow" d="M266 276 L202 276" marker-end="url(#hxArrowGrey)"></path>
+            <text x="233" y="208" text-anchor="middle" font-size="9"
+                  font-family="ui-monospace, Consolas, monospace" fill="var(--hx-blue)">tool_call</text>
+            <text x="233" y="292" text-anchor="middle" font-size="9"
+                  font-family="ui-monospace, Consolas, monospace" fill="var(--hx-txt3)">校验后结果</text>
+
+            <path class="flow is-live" d="M634 216 L718 216" marker-end="url(#hxArrowBlue)"></path>
+            <path class="flow" d="M718 276 L636 276" marker-end="url(#hxArrowGrey)"></path>
+            <text x="676" y="208" text-anchor="middle" font-size="9"
+                  font-family="ui-monospace, Consolas, monospace" fill="var(--hx-blue)">commit</text>
+            <text x="676" y="292" text-anchor="middle" font-size="9"
+                  font-family="ui-monospace, Consolas, monospace" fill="var(--hx-txt3)">trace / span</text>
+
+            <!-- ===== 数据脉冲 ===== -->
+            <path class="pulse" d="M200 216 L266 216"></path>
+            <path class="pulse" d="M634 216 L718 216" style="animation-delay:.6s"></path>
+          </svg>
+        </div>
+
+        <p class="hx-arch__note">
+          示意图，无外部图片依赖。五层能力由下往上分别对应 §03 的五大支柱；<code>LangGraph StateGraph</code> 是贯穿五层的状态机骨架，
+          每一层都是图上的一个节点，失败可以回到任意上游节点重跑。
+        </p>
+
+        <!-- 手机端专用：竖向三段（与上面 SVG 同构，避免横向拖动） -->
+        <div class="hx-arch__mobile" aria-hidden="true">
+          <div class="hx-am">
+            <div class="hx-am__zone">
+              <span class="hx-am__tag">NON-DETERMINISTIC</span>
+              <div class="hx-am__box">
+                <b>Frontier Model</b>
+                <span class="is-warn">前沿大模型 · 概率输出</span>
+              </div>
+            </div>
+
+            <div class="hx-am__link"><span>tool_call ↓</span></div>
+
+            <div class="hx-am__zone">
+              <span class="hx-am__tag">HARNESS LAYER · LangGraph StateGraph</span>
+              <div class="hx-am__layers">
+                <div class="hx-am__layer" data-layer="0"><em>L1</em><b>Tool Orchestration · 工具编排与隔离</b></div>
+                <div class="hx-am__layer" data-layer="1"><em>L2</em><b>Deterministic Guardrails · 确定性守卫</b></div>
+                <div class="hx-am__layer" data-layer="2"><em>L3</em><b>Self-Correction Loop · 自愈反馈</b></div>
+                <div class="hx-am__layer" data-layer="3"><em>L4</em><b>HITL &amp; Circuit Breaker · 熔断</b></div>
+                <div class="hx-am__layer" data-layer="4"><em>L5</em><b>Observability &amp; CI Gate · 可观测</b></div>
+              </div>
+            </div>
+
+            <div class="hx-am__link"><span>校验后结果 ↓</span></div>
+
+            <div class="hx-am__zone">
+              <span class="hx-am__tag">DETERMINISTIC</span>
+              <div class="hx-am__box">
+                <b>Enterprise System</b>
+                <span class="is-ok">ERP / CRM / 数据 · 事务可回滚</span>
+              </div>
+            </div>
+          </div>
+
+          <p class="hx-am__forbid"><b>✕</b>模型直连业务系统：不可审计 · 不可回滚 · 无重试 · 无权限边界</p>
+        </div>
+
+        <ul class="hx-layers" aria-label="五层能力（点击可在图中高亮）">
+          <li>
+            <button class="hx-layer" type="button" aria-pressed="false" data-layer="0">
+              <span class="hx-layer__no">L1</span>
+              <h3>工具编排与隔离</h3>
+              <p>模型只能「申请调用」，执行权在 Harness</p>
+            </button>
+          </li>
+          <li>
+            <button class="hx-layer" type="button" aria-pressed="false" data-layer="1">
+              <span class="hx-layer__no">L2</span>
+              <h3>确定性硬约束</h3>
+              <p>纯函数校验，不放行就退回重来</p>
+            </button>
+          </li>
+          <li>
+            <button class="hx-layer" type="button" aria-pressed="false" data-layer="2">
+              <span class="hx-layer__no">L3</span>
+              <h3>自愈反馈循环</h3>
+              <p>错误栈结构化回喂，直到测试通过</p>
+            </button>
+          </li>
+          <li>
+            <button class="hx-layer" type="button" aria-pressed="false" data-layer="3">
+              <span class="hx-layer__no">L4</span>
+              <h3>熔断与人工网关</h3>
+              <p>额度耗尽即停手，高风险挂起等人</p>
+            </button>
+          </li>
+          <li>
+            <button class="hx-layer" type="button" aria-pressed="false" data-layer="4">
+              <span class="hx-layer__no">L5</span>
+              <h3>可观测与 CI 门禁</h3>
+              <p>每次运行都有账本，回归不过不许合并</p>
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================================================================
+       §03 五大支柱
+       ================================================================== -->
+  <section class="hx-sec" id="hx-pillars">
+    <div class="wrap">
+      <div class="hx-sec__head">
+        <p class="hx-sec__no">03</p>
+        <div>
+          <h2>五大支柱：每一条都对应一段<em>可审查的代码</em></h2>
+          <p>
+            这里不放理念，只放「这条原则在代码里长什么样」。五条支柱各自解决 §01 里的一种失败模式，且互不依赖——
+            可以只上其中两条，收益依然成立。
+          </p>
+        </div>
+      </div>
+
+      <ol class="hx-pillars">
+
+        <li class="hx-pillar hx-reveal">
+          <div class="hx-pillar__top">
+            <span class="hx-pillar__no">01</span>
+            <h3>工具编排与上下文隔离<span class="en">Tool Orchestration</span></h3>
+          </div>
+          <p class="hx-pillar__lead">
+            MCP 负责「接得上」，Harness 负责「准不准接」。模型看到的只是工具描述，真正决定能不能执行的是代码里的白名单与权限表。
+          </p>
+          <ul class="hx-pillar__list">
+            <li>每个工具在 <b>TOOL_POLICY</b> 里登记 scopes、是否产生副作用、金额上限</li>
+            <li>模型输出的是 <b>tool_call 申请</b>，不是执行指令；未登记的工具直接抛 <code>ToolDenied</code></li>
+            <li>子任务跑在独立上下文里，只把<b>摘要</b>回传主图，避免上下文互相污染</li>
+            <li>提示词注入能改描述，改不了 policy——这是白名单放在代码层而不是 Prompt 层的原因</li>
+          </ul>
+          <div class="hx-pillar__foot">
+            <span>对应</span><code>guard_tool_call()</code><span>· 解决「越权调用工具」</span>
+          </div>
+        </li>
+
+        <li class="hx-pillar hx-reveal">
+          <div class="hx-pillar__top">
+            <span class="hx-pillar__no">02</span>
+            <h3>确定性硬约束守卫<span class="en">Deterministic Guardrails</span></h3>
+          </div>
+          <p class="hx-pillar__lead">
+            在非确定性输出与确定性业务系统之间，插一层纯函数过滤器。它必须是确定性的——用不确定的东西校验不确定的东西，等于没校验。
+          </p>
+          <ul class="hx-pillar__list">
+            <li>三道关：<b>JSON Schema</b>（结构）→ <b>业务规则</b>（语义）→ <b>Linter</b>（代码类产出）</li>
+            <li>校验器零 LLM 调用、零随机、零网络，可单测、可复现、可进 CI</li>
+            <li>不通过就返回 violations 列表，<b>不写入任何业务系统</b>——模型输出到这里只是一份提案</li>
+            <li>规则库与代码分离，业务方改规则不用改引擎</li>
+          </ul>
+          <div class="hx-pillar__foot">
+            <span>对应</span><code>deterministic_validator()</code><span>· 解决「格式漂移 / 幻觉当事实」</span>
+          </div>
+        </li>
+
+        <li class="hx-pillar hx-reveal">
+          <div class="hx-pillar__top">
+            <span class="hx-pillar__no">03</span>
+            <h3>自愈反馈循环<span class="en">Self-Correction &amp; Feedback Loops</span></h3>
+          </div>
+          <p class="hx-pillar__lead">
+            失败不是终点，是下一轮的输入。关键是<b>怎么把失败说清楚</b>——直接把原始报错丢回去，模型往往去改无关的地方。
+          </p>
+          <ul class="hx-pillar__list">
+            <li>捕获 <b>error_stack</b>：失败步骤、异常类型、关键栈帧、命中的规则编号</li>
+            <li>结构化成修复指令：<b>fix_hint</b> 给方向，<b>do_not_change</b> 划边界</li>
+            <li>RAG 场景同理：召回率低于阈值时把「检索到了什么、漏了什么」一并回喂</li>
+            <li>循环的终止条件是可执行的——<b>自动化测试通过</b>，不是模型说「我改好了」</li>
+          </ul>
+          <div class="hx-pillar__foot">
+            <span>对应</span><code>step_execution_with_harness()</code><span>· 解决「改了还是错」</span>
+          </div>
+        </li>
+
+        <li class="hx-pillar hx-reveal">
+          <div class="hx-pillar__top">
+            <span class="hx-pillar__no">04</span>
+            <h3>熔断与人工介入网关<span class="en">Human-in-the-Loop &amp; Circuit Breakers</span></h3>
+          </div>
+          <p class="hx-pillar__lead">
+            熔断不是「兜底让它通过」，是「在烧掉预算之前停手」。重试的边际收益下降极快，第 4 次之后基本是噪声。
+          </p>
+          <ul class="hx-pillar__list">
+            <li><b>max_retries</b> 硬上限：耗尽即抛 <code>CircuitOpen</code>，不再追加 token</li>
+            <li>高风险动作（外部写接口、大额修改）不重试，直接 <b>挂起 + Webhook 通知</b>等人批</li>
+            <li>熔断状态分 <b>CLOSED / OPEN</b> 两态，页面 §04 有可交互演示</li>
+            <li>人工审批回来的结果同样要过一遍校验，不因为「人批过」就跳过</li>
+          </ul>
+          <div class="hx-pillar__foot">
+            <span>对应</span><code>run_with_self_healing()</code><span>· 解决「死循环烧 Token」</span>
+          </div>
+        </li>
+
+        <li class="hx-pillar hx-reveal">
+          <div class="hx-pillar__top">
+            <span class="hx-pillar__no">05</span>
+            <h3>全链路可观测与 CI 门禁<span class="en">Observability &amp; CI Integration</span></h3>
+          </div>
+          <p class="hx-pillar__lead">
+            没有账本就没有优化。每次运行都要能回答三个问题：花了多少、慢在哪、这次和上次比是变好还是变坏。
+          </p>
+          <ul class="hx-pillar__list">
+            <li>根 span 贯穿一次会话，子 span 覆盖 router / planner / tool / validator / responder</li>
+            <li>Token 与耗时按 span 记账，异常节点可以直接定位到具体环节</li>
+            <li><b>智能体行为进 CI</b>：30 题回归集每次 push 自动跑，断言不过即阻断合并</li>
+            <li>门禁不只看「能不能跑通」，还断言检索准确率、引用准确率、拒答率</li>
+          </ul>
+          <div class="hx-pillar__foot">
+            <span>对应</span><code>ctx.trace</code> <span>+</span> <code>ci.yml</code><span>· 解决「不可观测」</span>
+          </div>
+        </li>
+
+      </ol>
+    </div>
+  </section>
+
+  <!-- ==================================================================
+       §04 代码
+       ================================================================== -->
+  <section class="hx-sec" id="hx-code">
+    <div class="wrap">
+      <div class="hx-sec__head">
+        <p class="hx-sec__no">04</p>
+        <div>
+          <h2>核心代码：四个函数，<em>一条闭环</em></h2>
+          <p>
+            下面是从 <code>harness_core.py</code> 抽出的精简版（去掉业务细节，保留结构与注释）。
+            四个函数串起来就是完整链路：<b>白名单 → 校验 → 回喂 → 熔断</b>。基于 LangGraph 的状态机思想，工具层遵循 MCP 的隔离规范。
+          </p>
+        </div>
+      </div>
+
+      <div class="hx-tabs" role="tablist" aria-label="代码与说明">
+        <button class="hx-tab" type="button" role="tab" id="hx-tab-py"
+                aria-controls="hx-panel-py" aria-selected="true">Python 核心片段</button>
+        <button class="hx-tab" type="button" role="tab" id="hx-tab-arch"
+                aria-controls="hx-panel-arch" aria-selected="false" tabindex="-1">架构说明</button>
+        <button class="hx-tab" type="button" role="tab" id="hx-tab-ci"
+                aria-controls="hx-panel-ci" aria-selected="false" tabindex="-1">CI 门禁</button>
+      </div>
+
+      <!-- ---------- Python ---------- -->
+      <div class="hx-panel" id="hx-panel-py" role="tabpanel" aria-labelledby="hx-tab-py">
+        <div class="hx-codebox">
+          <div class="hx-codebox__bar">
+            <span class="hx-codebox__name">harness_core.py · 展示用精简版</span>
+            <button class="hx-copy" type="button"
+                    data-label="复制代码" data-ok="已复制" data-fail="复制失败">复制代码</button>
+          </div>
+<pre class="hx-code"><code data-lang="python"># harness_core.py —— Harness-Agent-Core 的核心闭环（展示用精简版）
+# 设计前提：模型只产出「提案」，任何副作用都由 Harness 代码层决定是否执行。
+from dataclasses import dataclass
+import traceback
+
+MAX_RETRIES = 3
+
+# ── 工具白名单：不是「模型能调什么」，而是「Harness 允许执行什么」 ──────────
+TOOL_POLICY = {
+    "kb.search":        {"scopes": ["read"],  "side_effect": False},
+    "jira.create":      {"scopes": ["write"], "side_effect": True, "approval": True},
+    "settlement.write": {"scopes": ["write"], "side_effect": True, "approval": True,
+                         "max_amount": 100_000},
+}
+
+
+class ToolDenied(Exception):
+    """工具未授权。抛出即中止，不进入执行层。"""
+
+
+class CircuitOpen(Exception):
+    """重试额度耗尽。熔断，不再追加 token。"""
+
+
+def guard_tool_call(name, args, ctx):
+    """亮点 1 · 工具白名单鉴权：未授权工具在这里被拦下，永远到不了执行层。
+
+    为什么白名单必须写在代码里而不是 Prompt 里：
+    工具描述是模型可读的文本，文本就能被提示词注入改写；
+    TOOL_POLICY 是代码常量，注入改不动它。
+    """
+    rule = TOOL_POLICY.get(name)
+    if rule is None:                                  # ① 不在白名单
+        raise ToolDenied(f"tool_not_allowed: {name}")
+    if not ctx.granted_scopes.issuperset(rule["scopes"]):   # ② 越权
+        raise ToolDenied(f"scope_missing: {name}")
+    if rule.get("max_amount") and args.get("amount", 0) &gt; rule["max_amount"]:
+        raise ToolDenied(f"amount_over_limit: {name}")     # ③ 金额越界
+    return rule
+
+
+# ── 确定性校验：三道关，全部是纯函数，可单测、可复现、零随机 ────────────────
+BUSINESS_RULES = [
+    (lambda d: d.get("currency") in {"CNY", "USD"},        "schema.currency"),
+    (lambda d: isinstance(d.get("amount"), (int, float)),  "schema.amount_type"),
+    (lambda d: 0 &lt; d["amount"] &lt;= 100_000,                   "policy.amount_limit"),
+]
+
+
+def deterministic_validator(payload, schema):
+    """亮点 2 · 业务规则 + Schema 校验：返回 violations，空列表表示放行。
+
+    这里绝不调用 LLM。校验器本身必须是确定性的——
+    用不确定的东西去校验不确定的东西，等于没有校验。
+    """
+    violations = []
+
+    # ① 结构：JSON Schema
+    violations += jsonschema_errors(payload, schema)   # 展示用占位实现
+
+    # ② 语义：业务规则。单条规则异常不应炸掉整个校验器
+    for rule, code in BUSINESS_RULES:
+        try:
+            if not rule(payload):
+                violations.append(code)
+        except Exception:
+            violations.append(code + ".eval_error")
+
+    # ③ 代码类产出额外跑 Lint
+    if payload.get("patch"):
+        violations += lint_patch(payload["patch"])     # 展示用占位实现
+
+    return violations
+
+
+def step_execution_with_harness(step, state, ctx):
+    """亮点 3 · 失败捕获：把 error_stack 转成下一轮的纠错输入。
+
+    注意回喂的不是错误原文，而是「结构化的失败现场」。
+    原始 stack 直接丢回去，模型常常去改无关的地方。
+    """
+    try:
+        out = step.invoke(state)                       # 模型 / 工具 / 子图
+    except Exception as exc:
+        state["error_stack"] = {
+            "step": step.name,
+            "type": type(exc).__name__,
+            "message": str(exc),
+            "trace": traceback.format_exc(limit=3),
+        }
+        state["status"] = "retryable"
+        return state
+
+    violations = deterministic_validator(out["payload"], out["schema"])
+    if violations:
+        state["error_stack"] = {
+            "step": step.name,
+            "type": "GateRejected",
+            "violations": violations,
+        }
+        state["status"] = "retryable"
+        return state
+
+    state.update(out)
+    state["status"] = "ok"
+    return state
+
+
+def build_repair_prompt(error_stack, history):
+    """把失败现场压成一段「有边界」的纠错指令。
+
+    do_not_change 是刻意加的：不给边界，模型会顺手重构，
+    改动面从 6 行变成 60 行，回归风险直接翻倍。
+    """
+    return (
+        "上一轮未通过校验，请只修复下列问题，不要改动其他文件。\n"
+        f"失败步骤: {error_stack['step']}\n"
+        f"失败原因: {error_stack.get('message') or error_stack.get('violations')}\n"
+        f"错误栈:\n{error_stack.get('trace', '(无)')}\n"
+        "约束: 不得修改公开 API 与数据库 schema；不得新增依赖。\n"
+        "输出: 只给出 unified diff。"
+    )
+
+
+def run_with_self_healing(task, graph, ctx, max_retries=MAX_RETRIES):
+    """亮点 4 · max_retries 熔断兜底：额度耗尽就停手，不再追加 token。
+
+    熔断不是「让任务通过」，而是「在预算烧完之前止损」。
+    实测第 4 次之后的成功率接近噪声，继续重试只是在给失败付费。
+    """
+    state = {"task": task, "attempt": 0, "history": []}
+
+    for attempt in range(1, max_retries + 1):
+        state["attempt"] = attempt
+        state = graph.invoke(state)                    # LangGraph 状态机推进一步
+
+        if state["status"] == "ok":
+            ctx.trace.finish("self_healed" if attempt &gt; 1 else "first_pass")
+            return {"ok": True, "attempts": attempt, "state": state}
+
+        if state["status"] == "needs_human":           # 高风险：挂起等人批
+            ctx.webhook.notify(state["error_stack"])
+            ctx.trace.finish("suspended")
+            return {"ok": False, "reason": "human_approval_required",
+                    "attempts": attempt}
+
+        # 还有额度 → 把失败现场回喂下一轮
+        state["history"].append(build_repair_prompt(state["error_stack"],
+                                                    state["history"]))
+        ctx.trace.span("retry", attempt=attempt, tokens=state.get("tokens", 0))
+
+    # 额度耗尽 → 熔断
+    ctx.trace.finish("circuit_open")
+    raise CircuitOpen(
+        f"max_retries={max_retries} exhausted; "
+        f"tokens_spent={ctx.usage.total}; escalate_to_human=True"
+    )</code></pre>
+        </div>
+
+        <ul class="hx-notes">
+          <li class="hx-note">
+            <b>guard_tool_call()</b>
+            <span>白名单 + scope + 金额上限三重判断。未登记的工具直接抛异常，连执行层都进不去。</span>
+          </li>
+          <li class="hx-note">
+            <b>deterministic_validator()</b>
+            <span>Schema → 业务规则 → Lint 三道关。纯函数、零 LLM 调用，可单测可进 CI。</span>
+          </li>
+          <li class="hx-note">
+            <b>step_execution_with_harness()</b>
+            <span>异常与校验失败都收敛成同一种 error_stack 结构，下游只处理一种形状。</span>
+          </li>
+          <li class="hx-note">
+            <b>run_with_self_healing()</b>
+            <span>循环有明确终点：通过、转人工、或熔断。不会出现「一直在重试」的第三种状态。</span>
+          </li>
+        </ul>
+
+        <!-- ---- 回喂信号升级说明 ---- -->
+        <div class="hx-scope">
+          <p class="hx-scope__h"><span>升级</span>回喂的不是错误栈，是可修复的失败信号</p>
+          <dl>
+            <dt>以前的做法</dt>
+            <dd>把 <code>traceback.format_exc()</code> 原样丢回给模型。结果很稳定：模型会去改无关的地方——因为它看到的是一段自由文本，只能靠猜定位。</dd>
+
+            <dt>现在回喂什么</dt>
+            <dd><code>findings[]</code> 列表，每条带 <code>failed_gate</code>（哪个闸门拒的）、<code>offending_file:line</code>（在哪）、<code>severity</code>（BLOCK 必须修 / WARN 只记录）、<code>resolution_hint</code>（怎么修）。模型不用猜。</dd>
+
+            <dt>为什么要有指纹</dt>
+            <dd><code>semantic_fingerprint</code> 只对「失败本身」取哈希（闸门 + 位置 + 级别），不含 message 与栈。这样同一个失败重复出现时能识别出来：<b>如果重试后指纹和上一轮相同，说明它根本没在修，立刻熔断，不等额度耗尽。</b>3 次同样的失败和 3 次不同的失败，不该有相同的处理。</dd>
+          </dl>
+        </div>
+
+        <!-- ---- 自愈时间线 ---- -->
+        <div class="hx-tl">
+          <div class="hx-tl__bar">
+            <h3 class="hx-tl__title">错误栈回喂时间线<span>一次真实形态的自愈过程</span></h3>
+            <div class="hx-tl__ctrls">
+              <button class="hx-btn hx-btn--primary" type="button"
+                      data-hx-play data-label-play="▶ 播放自愈过程">▶ 播放自愈过程</button>
+            </div>
+          </div>
+
+          <ol class="hx-tl__steps">
+            <li class="hx-step"><span class="hx-step__dot">1</span><span class="hx-step__label"><b>Error Stack</b>测试跑飞</span></li>
+            <li class="hx-step"><span class="hx-step__dot">2</span><span class="hx-step__label"><b>Validator 拦截</b>不放行</span></li>
+            <li class="hx-step"><span class="hx-step__dot">3</span><span class="hx-step__label"><b>Prompt 回喂</b>带边界</span></li>
+            <li class="hx-step"><span class="hx-step__dot">4</span><span class="hx-step__label"><b>Retry</b>只改 6 行</span></li>
+            <li class="hx-step"><span class="hx-step__dot">5</span><span class="hx-step__label"><b>Pass</b>门禁全绿</span></li>
+          </ol>
+
+          <div class="hx-tl__body">
+            <p class="hx-tl__meta"></p>
+            <pre class="hx-tl__pre" aria-live="polite"></pre>
+            <p class="hx-tl__cap"></p>
+          </div>
+        </div>
+
+        <!-- ---- 熔断演示 ---- -->
+        <div class="hx-breaker">
+          <div class="hx-breaker__head">
+            <div>
+              <h3>熔断演示：把 max_retries 调到 3 以下试试</h3>
+              <p>场景是脚本化的：前两次必然失败、第三次必然成功。所以额度给够会自愈，额度不够会熔断。</p>
+              <p>熔断有两种触发：<b>额度耗尽</b>（<code>max_retries</code> 用满）和<b>失败重复</b>（<code>semantic_fingerprint</code> 相同）。后者更早、更省——它在你把预算烧完之前就告诉你「这条路走不通」。</p>
+            </div>
+            <div class="hx-tl__ctrls">
+              <button class="hx-btn hx-btn--primary" type="button" data-hx-run>运行演示</button>
+              <button class="hx-btn" type="button" data-hx-reset>重置</button>
+            </div>
+          </div>
+
+          <div class="hx-range">
+            <label for="hx-maxretry">max_retries</label>
+            <input type="range" id="hx-maxretry" min="1" max="5" step="1" value="3"
+                   aria-describedby="hx-maxretry-hint">
+            <output for="hx-maxretry">3</output>
+            <span id="hx-maxretry-hint" style="font-size:12px;color:var(--hx-txt3)">
+              取 1 或 2 → 触发熔断；取 3 以上 → 自愈成功
+            </span>
+          </div>
+
+          <pre class="hx-log" aria-live="polite" aria-atomic="false"></pre>
+          <span class="hx-breaker__state"><i aria-hidden="true"></i>CLOSED · 熔断器闭合</span>
+        </div>
+      </div>
+
+      <!-- ---------- 架构说明 ---------- -->
+      <div class="hx-panel" id="hx-panel-arch" role="tabpanel" aria-labelledby="hx-tab-arch" hidden>
+        <div class="hx-codebox">
+          <div class="hx-codebox__bar">
+            <span class="hx-codebox__name">ARCHITECTURE.md · 状态机与职责边界</span>
+          </div>
+<pre class="hx-code"><code data-lang="text"># 状态机（LangGraph StateGraph 的节点与边）
+
+  plan ──▶ execute ──▶ validate ──▶ commit
+             ▲            │
+             │            ├── ok ────────────▶ done
+             │            │
+             └── retry ◀──┴── violations ──▶ (attempt &lt; max) ──▶ 回喂后重跑
+                                            └─ (attempt ≥ max) ──▶ circuit_open
+                                                                  └─▶ 转人工
+
+# 职责边界：谁能决定什么
+
+  Frontier Model   ── 只能产出「候选」：tool_call 申请、patch、报告草稿
+  Harness Layer    ── 决定「是否执行」：白名单、Schema、业务规则、额度、审批
+  Enterprise Sys   ── 只接受已通过校验的、带 trace_id 的、可回滚的写入
+
+# 为什么校验层必须与模型解耦
+
+  1. 可测试   —— 纯函数，输入输出确定，能进 CI 当断言
+  2. 可解释   —— 拦下来时能说清是哪条规则、哪个字段
+  3. 可替换   —— 换模型、换供应商，校验层一行不用改
+  4. 可审计   —— 规则库本身就是合规证据，不依赖模型当时的「想法」</code></pre>
+        </div>
+
+        <ul class="hx-notes">
+          <li class="hx-note">
+            <b>节点 = 职责</b>
+            <span>plan / execute / validate / commit 四个节点各自只做一件事，失败回到 execute 而不是整图重跑。</span>
+          </li>
+          <li class="hx-note">
+            <b>边 = 策略</b>
+            <span>「继续 / 重试 / 熔断 / 转人工」是图上的四条边，不是散落在代码里的 if-else。</span>
+          </li>
+          <li class="hx-note">
+            <b>状态 = 证据</b>
+            <span>state 里带 attempt、error_stack、tokens，任何一次运行都能还原出完整现场。</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- ---------- CI 门禁 ---------- -->
+      <div class="hx-panel" id="hx-panel-ci" role="tabpanel" aria-labelledby="hx-tab-ci" hidden>
+        <div class="hx-codebox">
+          <div class="hx-codebox__bar">
+            <span class="hx-codebox__name">.github/workflows/agent-gate.yml · 智能体行为回归</span>
+            <button class="hx-copy" type="button"
+                    data-label="复制 YAML" data-ok="已复制" data-fail="复制失败">复制 YAML</button>
+          </div>
+<pre class="hx-code"><code data-lang="yaml"># 智能体的「行为」也要像代码一样被回归测试。
+# 这段门禁的作用：Prompt 改一个字、模型换一个版本，只要指标掉了就阻断合并。
+name: agent-gate
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 跑 30 题分层回归集（无 Key 时降级为检索直出）
+        run: python -m harness.eval --suite eval_set.json --top-k 3 --json
+
+      - name: 断言阈值（任一不过即失败）
+        run: |
+          python - &lt;&lt;'PY'
+          import json, sys
+          r = json.load(open("eval_report.json"))
+          gates = {
+              "retrieval_acc@3": (r["retrieval_acc"], 0.60),
+              "citation_acc":    (r["citation_acc"],  0.60),
+              "refusal_rate":    (r["refusal_rate"],  0.40),  # 越小越好
+              "schema_pass":     (r["schema_pass"],   1.00),
+          }
+          bad = [k for k, (v, t) in gates.items()
+                 if (v &lt; t if k != "refusal_rate" else v &gt; t)]
+          print("GATES", gates)
+          sys.exit(1 if bad else 0)
+          PY
+
+      - name: 工具白名单快照（防止有人偷偷放开权限）
+        run: python -m harness.audit --diff-policy TOOL_POLICY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: eval_report.json</code></pre>
+        </div>
+
+        <ul class="hx-notes">
+          <li class="hx-note">
+            <b>断言的是行为，不是语法</b>
+            <span>不只看「代码能不能跑」，而是看检索准确率、引用准确率、拒答率有没有掉。</span>
+          </li>
+          <li class="hx-note">
+            <b>白名单有快照</b>
+            <span>TOOL_POLICY 的 diff 进 CI，放开权限这件事必须显式出现在 PR 里，不能悄悄发生。</span>
+          </li>
+          <li class="hx-note">
+            <b>报告留档</b>
+            <span>每次运行上传 eval_report.json，趋势可查，回滚有依据。</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================================================================
+       §05 指标
+       ================================================================== -->
+  <section class="hx-sec" id="hx-metrics">
+    <div class="wrap">
+      <div class="hx-sec__head">
+        <p class="hx-sec__no">05</p>
+        <div>
+          <h2>量化成效：<em>50 次</em>复杂多步骤测试</h2>
+          <p>
+            口径是自建实验，不是客户项目，也不是第三方基准。测试集由我设计，包含代码生成、数据核对、报告撰写三类多步骤任务，
+            每类都要求产出必须通过自动化断言才算完成。
+          </p>
+        </div>
+      </div>
+
+      <ul class="hx-metrics">
+        <li class="hx-metric">
+          <span class="hx-metric__num" data-count="32" data-dec="0" data-suffix="%">32%</span>
+          <span class="hx-metric__label">引入 Harness 前的任务中断率</span>
+          <span class="hx-metric__sub">50 次中 16 次中断</span>
+        </li>
+        <li class="hx-metric hx-metric--good">
+          <span class="hx-metric__num" data-count="2" data-dec="0" data-prefix="&lt;" data-suffix="%">&lt;2%</span>
+          <span class="hx-metric__label">引入 Harness 后的任务中断率</span>
+          <span class="hx-metric__sub">50 次中 0 次（1 次即 2%，故 &lt;2% 要求 0 次）</span>
+        </li>
+        <li class="hx-metric hx-metric--good">
+          <span class="hx-metric__num" data-count="80" data-dec="0" data-prefix="−" data-suffix="%">−80%</span>
+          <span class="hx-metric__label">错误修正平均耗时缩短</span>
+          <span class="hx-metric__sub">人工定位 + 手改 → 自动回喂</span>
+        </li>
+        <li class="hx-metric">
+          <span class="hx-metric__num" data-count="98" data-dec="0" data-suffix="%">98%</span>
+          <span class="hx-metric__label">交付成功率（同一批测试）</span>
+          <span class="hx-metric__sub">由 &lt;2% 中断率反推，取保守值 98%</span>
+        </li>
+      </ul>
+
+      <div class="hx-compare hx-reveal">
+        <p class="hx-compare__title">前后对比（同一批 50 次测试，同一批任务）</p>
+
+        <div class="hx-cmp">
+          <div class="hx-cmp__name"><span>任务中断率</span><b>越低越好</b></div>
+          <div class="hx-cmp__row">
+            <span class="hx-cmp__k">引入前</span>
+            <span class="hx-cmp__track"><span class="hx-cmp__fill before" data-w="32" style="width:32%"></span></span>
+            <span class="hx-cmp__v">32%</span>
+          </div>
+          <div class="hx-cmp__row">
+            <span class="hx-cmp__k">引入后</span>
+            <span class="hx-cmp__track"><span class="hx-cmp__fill after" data-w="2" style="width:2%"></span></span>
+            <span class="hx-cmp__v">&lt;2%</span>
+          </div>
+        </div>
+
+        <div class="hx-cmp hx-cmp--good">
+          <div class="hx-cmp__name"><span>交付成功率</span><b>越高越好</b></div>
+          <div class="hx-cmp__row">
+            <span class="hx-cmp__k">引入前</span>
+            <span class="hx-cmp__track"><span class="hx-cmp__fill before" data-w="68" style="width:68%"></span></span>
+            <span class="hx-cmp__v">68%</span>
+          </div>
+          <div class="hx-cmp__row">
+            <span class="hx-cmp__k">引入后</span>
+            <span class="hx-cmp__track"><span class="hx-cmp__fill after" data-w="98" style="width:98%"></span></span>
+            <span class="hx-cmp__v">98%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hx-scope">
+        <p class="hx-scope__h"><span>口径</span>这组数字是怎么来的，以及它不能说明什么</p>
+        <dl>
+          <dt>数据来源</dt>
+          <dd><b>项目实验 / 作品集口径</b>。50 次测试由本人设计并执行，非客户项目、非第三方基准、非生产环境流量。</dd>
+
+          <dt>任务构成</dt>
+          <dd>代码生成与修复、结构化数据核对、报告撰写三类多步骤任务；每类都要求产出通过自动化断言（单测 / Schema / 规则）才算完成。</dd>
+
+          <dt>中断定义</dt>
+          <dd>任务在 <code>max_retries</code> 内未通过断言，或触发熔断转人工，记为一次中断。人工事后补救成功的不算自愈。</dd>
+
+          <dt><code>ok_with_warnings</code> 不计入中断</dt>
+          <dd>只有 WARN 级发现（不影响交付的 lint 提示、风格问题）时，任务记为通过并记录告警，不算一次中断。早期版本把任何 violation 都当失败，会把「能交付但有小瑕疵」误算成中断率。</dd>
+
+          <dt>熔断分两种，都要计入中断</dt>
+          <dd>额度耗尽（<code>circuit_open_exhausted</code>）与失败重复（<code>circuit_open_recurred</code>）都记为中断。后者的价值在于它<b>缩短了失败的持续时间</b>，而不是避免了失败——这组数字衡量的是止损速度，不是成功率。</dd>
+
+          <dt>两个口径同源</dt>
+          <dd>中断率 32% 对应成功率 68%，四舍五入即 <b>70%</b>；中断率 &lt; 2% 对应成功率 <b>98%</b>。开头那句「70% → 98%」与这里的「32% → &lt; 2%」是同一组数据的两种表述，不是两组实验。</dd>
+
+          <dt>分母注意</dt>
+          <dd>50 次样本的最小分辨率是 2 个百分点：<b>0 次中断才是 &lt; 2%</b>，1 次中断就是 2%（不满足 &lt; 2%）。这组实验里中断数为 0，所以成功率写成保守值 98% 而不是 100%。样本量小是这套数字最主要的局限。</dd>
+
+          <dt>不适用范围</dt>
+          <dd>不能外推为「任意任务都能达到 98%」。任务越开放、断言越难写，收益越小——Harness 的上限取决于你能把验收标准写得多确定。</dd>
+
+          <dt>成本口径</dt>
+          <dd>自愈会多花 Token（本页演示链路约 2,270 tokens / 次），换的是人工返工时间。当人工成本低于 Token 成本时，这个交换不划算。</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================================================================
+       §06 可观测面板
+       ================================================================== -->
+  <section class="hx-sec" id="hx-obs">
+    <div class="wrap">
+      <div class="hx-sec__head">
+        <p class="hx-sec__no">06</p>
+        <div>
+          <h2>可观测面板：一次运行<em>完整账本</em></h2>
+          <p>
+            下面是 §04 那条自愈链路的真实形态（演示数据，结构与实际 trace 一致）。
+            面板要能在一屏内回答：这次跑了多久、花了多少、卡在哪、门禁过没过。
+          </p>
+        </div>
+      </div>
+
+      <div class="hx-obs">
+        <div class="hx-obs__head">
+          <div class="hx-obs__id">
+            <span>trace_id</span><b>run_7f3a91c2</b>
+            <span class="hx-obs__pill">demo data</span>
+          </div>
+          <div class="hx-obs__id">
+            <span>task</span><b>settlement-fix</b>
+            <span class="hx-obs__pill is-ok">self_healed</span>
+          </div>
+        </div>
+
+        <div class="hx-kpis">
+          <div class="hx-kpi">
+            <span class="hx-kpi__k">tokens</span>
+            <span class="hx-kpi__v">2,270</span>
+          </div>
+          <div class="hx-kpi">
+            <span class="hx-kpi__k">wall time</span>
+            <span class="hx-kpi__v">7.3<small>s</small></span>
+          </div>
+          <div class="hx-kpi">
+            <span class="hx-kpi__k">attempts</span>
+            <span class="hx-kpi__v">2<small>/ 3</small></span>
+          </div>
+          <div class="hx-kpi">
+            <span class="hx-kpi__k">spans</span>
+            <span class="hx-kpi__v">8</span>
+          </div>
+          <div class="hx-kpi">
+            <span class="hx-kpi__k">circuit</span>
+            <span class="hx-kpi__v is-ok">CLOSED</span>
+          </div>
+          <div class="hx-kpi">
+            <span class="hx-kpi__k">ci gate</span>
+            <span class="hx-kpi__v is-ok">PASS</span>
+          </div>
+        </div>
+
+        <div class="hx-spans">
+          <div class="hx-spans__h">Span 瀑布 <span>宽度 = 占总耗时比例 · 悬停看节点</span></div>
+
+          <div class="hx-span">
+            <span class="hx-span__n">agent.workflow.invoke</span>
+            <span class="hx-span__track">
+              <span class="hx-span__bar" data-left="0" data-w="100" style="left:0%;width:100%" title="根 span · 7.30s"></span>
+            </span>
+            <span class="hx-span__t">7.30s</span>
+          </div>
+
+          <div class="hx-span hx-span--child">
+            <span class="hx-span__n">router</span>
+            <span class="hx-span__track">
+              <span class="hx-span__bar" data-left="0" data-w="5.8" style="left:0%;width:5.8%" title="router · 0.42s"></span>
+            </span>
+            <span class="hx-span__t">0.42s</span>
+          </div>
+
+          <div class="hx-span hx-span--child">
+            <span class="hx-span__n">planner</span>
+            <span class="hx-span__track">
+              <span class="hx-span__bar" data-left="5.8" data-w="10.4" style="left:5.8%;width:10.4%" title="planner · 0.76s"></span>
+            </span>
+            <span class="hx-span__t">0.76s</span>
+          </div>
+
+          <div class="hx-span hx-span--child">
+            <span class="hx-span__n">tool.call kb.search</span>
+            <span class="hx-span__track">
+              <span class="hx-span__bar" data-left="16.2" data-w="14.5" style="left:16.2%;width:14.5%" title="tool · 1.06s"></span>
+            </span>
+            <span class="hx-span__t">1.06s</span>
+          </div>
+
+          <div class="hx-span hx-span--child">
+            <span class="hx-span__n">validator · 1st</span>
+            <span class="hx-span__track">
+              <span class="hx-span__bar is-fail" data-left="30.7" data-w="3.7" style="left:30.7%;width:3.7%" title="validator 拦截 · 0.27s"></span>
+            </span>
+            <span class="hx-span__t">0.27s</span>
+          </div>
+
+          <div class="hx-span hx-span--child">
+            <span class="hx-span__n">retry #1 · 回喂重跑</span>
+            <span class="hx-span__track">
+              <span class="hx-span__bar is-fail" data-left="34.4" data-w="42.6" style="left:34.4%;width:42.6%" title="retry · 3.11s · 最慢的一段"></span>
+            </span>
+            <span class="hx-span__t">3.11s</span>
+          </div>
+
+          <div class="hx-span hx-span--child">
+            <span class="hx-span__n">validator · 2nd</span>
+            <span class="hx-span__track">
+              <span class="hx-span__bar is-ok" data-left="77.0" data-w="3.7" style="left:77.0%;width:3.7%" title="validator 通过 · 0.27s"></span>
+            </span>
+            <span class="hx-span__t">0.27s</span>
+          </div>
+
+          <div class="hx-span hx-span--child">
+            <span class="hx-span__n">responder</span>
+            <span class="hx-span__track">
+              <span class="hx-span__bar is-ok" data-left="80.7" data-w="19.3" style="left:80.7%;width:19.3%" title="responder · 1.41s"></span>
+            </span>
+            <span class="hx-span__t">1.41s</span>
+          </div>
+        </div>
+
+        <div class="hx-gate">
+          <div class="hx-gate__h">CI Gate <span>30 / 30 PASS</span></div>
+          <ul>
+            <li><i aria-hidden="true">✓</i><span>unit · pytest 12 passed</span><b>0.8s</b></li>
+            <li><i aria-hidden="true">✓</i><span>schema · settlement.v2 valid</span><b>0.1s</b></li>
+            <li><i aria-hidden="true">✓</i><span>policy · 未触碰受限字段</span><b>0.1s</b></li>
+            <li><i aria-hidden="true">✓</i><span>agent-regression · 30 题分层回归</span><b>41.2s</b></li>
+            <li><i aria-hidden="true">✓</i><span>secret-scan · 0 findings</span><b>1.3s</b></li>
+          </ul>
+        </div>
+
+        <div class="hx-obs__foot">
+          <p>演示数据，结构与真实 trace 一致；未包含任何真实密钥、客户名或生产数据。</p>
+          <span class="hx-obs__pill">synthetic · no backend</span>
+        </div>
+      </div>
+
+      <div class="hx-scope">
+        <p class="hx-scope__h"><span>口径</span>trace 数据从哪来，以及一个容易写反的地方</p>
+        <dl>
+          <dt>数据来源</dt>
+          <dd>本页展示的是<b>演示数据</b>，结构与 Opik（Apache-2.0，可本地 Docker 自托管）的真实 trace 一致。真实埋点方式是把 <code>ctx.trace.span()</code> 换成 Opik 的 span API，LangGraph 侧用官方的 <code>OpikTracer</code> / <code>track_langgraph</code> 包裹一次即可。</dd>
+
+          <dt>容易写反的地方</dt>
+          <dd>Opik 的 MCP 能力是「<b>它自己作为 MCP server</b>」供编码 agent 读取 trace，<b>不是追踪 MCP 调用</b>。本页的 MCP 工具 span 是 Harness 自己埋的，不依赖 Opik 的 MCP 功能。</dd>
+
+          <dt>为什么不选更重的方案</dt>
+          <dd>Langfuse 自托管需要 postgres + clickhouse + redis + minio 五个服务，对一个作品集是过度工程；Phoenix 的 Elastic License 2.0 非 OSI 认证；OpenLLMetry 只是 instrumentation 库集合，本身没有后端，不解决「要有一个能截图的 trace 面板」。</dd>
+        </dl>
+      </div>
+
+      <div class="hx-scope">
+        <p class="hx-scope__h"><span>取舍</span>评估过但没选，以及为什么</p>
+        <dl>
+          <dt>MCP 网关（docker/mcp-gateway、IBM ContextForge、stacklok/toolhive）</dt>
+          <dd>我读过 <code>docker/mcp-gateway</code> 的源码，它其实有<b>两层</b>：<code>isToolEnabled()</code> 只过滤 <code>tools/list</code>（让模型看不见），而 <code>withInvokePolicy()</code> 作用在 <code>mcp.CallToolRequest</code> 上、<b>fail-closed</b>，direct call / <code>mcp-exec</code> / code-mode 三条路径共用。但 <code>NewDefaultClient()</code> 在不在 Docker Desktop、或 <code>MCPGovernance</code> 特性未开时返回 <code>NoopClient</code>（恒放行），而且 <code>policy.Request</code> 只有 <code>{server, tool, action, workingSet}</code>——<b>拿不到 <code>ctx</code>、会话状态与业务规则</b>。所以它<b>能做调用期拦截，但默认是关的，且判不了业务</b>，只能当纵深防御的第二道。</dd>
+
+          <dt>AG-XGuard</dt>
+          <dd>cage 三引擎（json_schema / regex / forbidden_string）形态最接近 <code>deterministic_validator</code>，severity 三档（BLOCK / WARN / ROLLBACK）的设计直接借鉴了它。但它<b>在 PyPI 上没有分发</b>，只能 <code>git clone</code>，且两个核心能力（StructuralPatch / ROLLBACK）作者自己标注未实现。<b>抄设计，不引依赖。</b></dd>
+
+          <dt>AEH（agentic-engineering-harness）</dt>
+          <dd>主张「模型输出不能选工具、不能授权、不能验收」——与本文立场几乎逐字相同。但它自带一整套 L1–L5（58.5 MB、3578 files、依赖 Paseo / mise / OpenSpec），<b>是竞品不是零件</b>，其 validator 无法作为库抽出复用。</dd>
+
+          <dt>AiWrangler</dt>
+          <dd><code>HUMAN REVIEW</code> 的批准通道设计值得抄——它明确「agent 的 tool arguments 永远不构成批准」，批准只能来自 MCP elicitation、原生桌面弹窗或 TTY 里人手动输入。但它核心判定依赖 TypeSafe 的 Jev 商业模型，diff 与 spec 会外发。<b>只抄审批通道的形态。</b></dd>
+
+          <dt>Remotion MCP</dt>
+          <dd>官方已废弃（最晚 2026-08-31 关停），理由之一是「agents do not invoke them reliably」。Remotion 的正确用法是被 Harness 调度的 SSR API（<code>bundle</code> → <code>selectComposition</code> → <code>renderMedia</code>），包成受管工具后落进 L1–L4，而不是当成一个 MCP 技能。</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================================================================
+       §07 结语
+       ================================================================== -->
+  <section class="hx-close" id="hx-close">
+    <div class="wrap">
+      <h2 class="hx-close__q">
+        我知道大模型会幻觉、会漂移、会在你没注意的时候<br>
+        把一次 <em>8 万块</em> 的写入执行成 <em>840 万</em>。
+      </h2>
+
+      <div class="hx-close__body">
+        <p>
+          这不是模型变差了，是它本来就这样——<b>概率系统天生不会为「确定」负责</b>。
+          指望下一代模型自己变可靠，等于把工程问题押在一次训练更新上。
+        </p>
+        <p>
+          我的做法反过来：<b>不要求模型可靠，要求系统可靠。</b>
+          模型只负责生成候选，能不能落地由代码判定；判定不过就带着失败现场重来；重来太多次就停手叫人。
+          这套结构在换模型、换供应商、换 Prompt 之后依然成立——因为它管的是流程，不是某一个模型。
+        </p>
+        <p>
+          所以这个作品想证明的不是「我很会用 AI」，而是：
+          <b>我能把玩具级的 AI 改造成生产环境里可验收、可审计、可回滚的系统。</b>
+          这条能力线，恰好也是我做企业交付这些年一直在做的事——只是把「验收标准」从人嘴里搬进了代码里。
+        </p>
+      </div>
+
+      <ul class="hx-close__cols">
+        <li class="hx-close__col">
+          <b>驾驭</b>
+          <span>五层结构把「模型想做什么」和「系统允许做什么」拆开，中间那层是代码，不是提示词。</span>
+        </li>
+        <li class="hx-close__col">
+          <b>验收</b>
+          <span>交付标准写成了断言：测试、Schema、业务规则、CI 门禁。过不了就是没过，没有「差不多」。</span>
+        </li>
+        <li class="hx-close__col">
+          <b>可复制</b>
+          <span>四个函数、一份策略表、一条 CI 流水线。换一个业务域，改的是规则库，不是引擎。</span>
+        </li>
+      </ul>
+
+      <div class="hx-close__sig">
+        <b>一句话收口：</b>
+        真正拉开工程能力差距的，从来不是选了哪个模型，而是你有没有一层能把「不确定」变成「可验收」的结构。
+        模型会继续变强，但这层结构不会因此变得不必要——<b>它只会变得更值钱。</b>
+      </div>
+
+      <div class="btn-row" style="margin-top:28px">
+        <a class="btn btn-primary" href="./works.html">看其它作品模块 →</a>
+        <a class="btn btn-ghost" href="https://github.com/Jav1es" target="_blank" rel="noopener">GitHub 开源仓库 ↗</a>
+        <a class="btn btn-ghost" href="#main">回到顶部</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer" id="contact">
+  <div class="wrap">
+    <div class="footer-v2">
+
+      <div class="footer-v2__brand">
+        <span class="footer-v2__name">黄家辉</span>
+        <p class="footer-v2__tagline">企业级 AI Agent 开发工程师 / FDE<br>6 年+ 企业科技服务（2021.04 至今）· 9 个公开开源仓库</p>
+
+        <ul class="footer-v2__contact">
+          <li class="contact-row">
+            <span class="contact-row__k">邮箱</span>
+            <a href="mailto:1459393754@qq.com">1459393754@qq.com</a>
+          </li>
+          <li class="contact-row">
+            <span class="contact-row__k">微信</span>
+            <a href="tel:13501519949">13501519949</a>
+          </li>
+          <li class="contact-row">
+            <span class="contact-row__k">GitHub</span>
+            <a href="https://github.com/Jav1es" target="_blank" rel="noopener">@Jav1es ↗</a>
+          </li>
+          <li class="contact-row">
+            <span class="contact-row__k">城市</span>
+            <span>广州 · 可远程</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="footer-v2__nav">
+        <span class="footer-v2__label">导航</span>
+        <ul class="footer-v2__list footer-v2__list--nav">
+          <li><a href="./index.html#works-featured">核心项目</a></li>
+          <li><a href="./works.html">全部作品模块</a></li>
+          <li><a href="./index.html#oss">开源作品</a></li>
+          <li><a href="./about.html">关于我</a></li>
+          <li><a href="./fde.html">FDE 工程师</a></li>
+          <li><a href="./ai-agent.html">AI 智能体开发</a></li>
+          <li><a href="./vibe-engineer.html">VibeCoding 工程师</a></li>
+          <li><a href="./resume.html">下载简历</a></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="footer-v2__meta">
+      <ul class="footer-v2__list footer-v2__list--meta">
+        <li><span>6 年+ 企业科技服务（2021.04 至今）· AI 工程实践 27 个月</span></li>
+        <li><span>9 个公开开源仓库（全部 MIT）· 3 个含 CI 门禁</span></li>
+        <li><span>成效数字按实测 / 测算模型 / 示例口径标注</span></li>
+        <li><span>客户名称与年度数据已脱敏</span></li>
+      </ul>
+    </div>
+
+    <div class="footer-v2__base">
+      <span>© 2026 黄家辉 · 个人作品集</span>
+      <span>本站为手写 HTML / CSS / JS，未使用前端框架</span>
+    </div>
+  </div>
+</footer>
+
+<script src="./menu.js" defer></script>
+<script src="./harness-agent-core.js" defer></script>
+</body>
+</html>

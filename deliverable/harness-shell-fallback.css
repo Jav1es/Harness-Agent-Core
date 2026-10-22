@@ -1,0 +1,469 @@
+/* ==========================================================================
+   Harness-Agent-Core · 站点外壳兜底样式
+   --------------------------------------------------------------------------
+   为什么需要这个文件：
+   详情页依赖站点 styles.css 提供 .site-nav / .site-footer / .btn / .eyebrow
+   等外壳样式。如果只把 harness-agent-core.* 三个文件单独打开（比如直接双击
+   deliverable 目录里的 html），styles.css 不存在，导航与页脚会退化成浏览器
+   默认样式 —— 蓝色下划线链接、项目符号、整块留白。
+
+   这个文件用 @supports 探测不到「样式表是否存在」，所以改用运行时探测：
+   JS 检查 .site-nav 的计算样式，判定站点样式是否生效，未生效时给 <html>
+   加 .hx-no-shell 类，由本文件接管外壳样式。
+   若站点样式正常加载，本文件的规则全部不生效（作用域挂在 .hx-no-shell 下）。
+
+   这样三个文件就是真正自足的：单开能看，装进站点更好看。
+   ========================================================================== */
+
+/* ---------- 基础排版兜底（无论外壳是否加载都需要） ---------- */
+.hx-no-shell {
+  -webkit-text-size-adjust: 100%;
+}
+
+.hx-no-shell body {
+  margin: 0;
+  background: var(--bg, #fbfbfa);
+  color: var(--txt, #0a0a0a);
+  font-family: "Inter", "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui,
+    -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.hx-no-shell .wrap {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.hx-no-shell .skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 999;
+  background: var(--txt, #0a0a0a);
+  color: var(--bg, #fff);
+  padding: 10px 16px;
+  border-radius: 0 0 6px 0;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.hx-no-shell .skip-link:focus {
+  left: 0;
+}
+
+/* 隐藏 3D 背景层与进度条：没有站点 CSS 时它们没有定位上下文，会乱跑 */
+.hx-no-shell .bg-stage,
+.hx-no-shell .progress-track {
+  display: none;
+}
+
+/* ---------- 导航 ---------- */
+.hx-no-shell .site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--nav-bg, rgba(255, 255, 255, .96));
+  border-bottom: 1px solid var(--line, #e4e4e0);
+}
+
+.hx-no-shell .nav-inner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-height: 62px;
+}
+
+.hx-no-shell .nav-brand {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -.3px;
+  color: var(--txt, #0a0a0a);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.hx-no-shell .nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-wrap: wrap;
+  list-style: none;
+  padding: 0;
+}
+
+/* 默认把二级菜单收起来：没有站点 JS 时它们会全部平铺 */
+.hx-no-shell .nav-links .nav-item {
+  position: relative;
+  list-style: none;
+}
+
+.hx-no-shell .nav-links .nav-item > a {
+  display: inline-block;
+  padding: 8px 11px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--txt2, #3d3d3d);
+  text-decoration: none;
+  border-radius: 7px;
+  white-space: nowrap;
+}
+
+.hx-no-shell .nav-links .nav-item > a:hover,
+.hx-no-shell .nav-links .nav-item > a:focus-visible {
+  background: var(--blue-soft, rgba(37, 99, 235, .10));
+  color: var(--blue, #2563eb);
+}
+
+.hx-no-shell .nav-links > a {
+  display: inline-block;
+  padding: 8px 11px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--txt2, #3d3d3d);
+  text-decoration: none;
+  border-radius: 7px;
+  white-space: nowrap;
+}
+
+.hx-no-shell .nav-links > a:hover {
+  background: var(--blue-soft, rgba(37, 99, 235, .10));
+  color: var(--blue, #2563eb);
+}
+
+.hx-no-shell .nav-links > a.nav-cta {
+  background: var(--blue, #2563eb);
+  color: #fff;
+  margin-left: 6px;
+}
+
+.hx-no-shell .nav-links > a.nav-cta:hover {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+/* 二级菜单：只在 hover / focus 时展开，避免平铺成一长条 */
+.hx-no-shell .nav-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 190px;
+  margin: 6px 0 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--card, #fff);
+  border: 1px solid var(--line, #e4e4e0);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(10, 10, 10, .12);
+}
+
+.hx-no-shell .nav-item.has-menu:hover > .nav-menu,
+.hx-no-shell .nav-item.has-menu:focus-within > .nav-menu {
+  display: block;
+}
+
+.hx-no-shell .nav-menu li { list-style: none; }
+
+.hx-no-shell .nav-menu a {
+  display: block;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--txt2, #3d3d3d);
+  text-decoration: none;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.hx-no-shell .nav-menu a:hover {
+  background: var(--blue-soft, rgba(37, 99, 235, .10));
+  color: var(--blue, #2563eb);
+}
+
+/* 汉堡按钮：宽屏不显示，窄屏显示 */
+.hx-no-shell .nav-toggle {
+  display: none;
+  margin-left: auto;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line2, #c9c9c2);
+  border-radius: 8px;
+  background: var(--card, #fff);
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+}
+
+.hx-no-shell .nav-toggle .bars,
+.hx-no-shell .nav-toggle .bars::before,
+.hx-no-shell .nav-toggle .bars::after {
+  display: block;
+  width: 18px;
+  height: 1.5px;
+  background: var(--txt, #0a0a0a);
+  border-radius: 1px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.hx-no-shell .nav-toggle .bars { top: 50%; margin-top: -.75px; }
+.hx-no-shell .nav-toggle .bars::before { content: ""; top: -6px; }
+.hx-no-shell .nav-toggle .bars::after { content: ""; top: 6px; }
+
+@media (max-width: 920px) {
+  .hx-no-shell .nav-toggle { display: block; }
+
+  .hx-no-shell .nav-links {
+    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    margin: 0;
+    padding: 8px 12px 14px;
+    background: var(--nav-bg, rgba(255, 255, 255, .98));
+    border-bottom: 1px solid var(--line, #e4e4e0);
+    box-shadow: 0 16px 32px rgba(10, 10, 10, .12);
+    max-height: 76vh;
+    overflow-y: auto;
+  }
+
+  .hx-no-shell .nav-links.is-open { display: flex; }
+
+  .hx-no-shell .nav-links .nav-item,
+  .hx-no-shell .nav-links > a { width: 100%; }
+
+  .hx-no-shell .nav-links .nav-item > a,
+  .hx-no-shell .nav-links > a {
+    display: block;
+    padding: 12px 6px;
+    font-size: 15px;
+    border-radius: 6px;
+  }
+
+  .hx-no-shell .nav-links > a.nav-cta {
+    margin: 8px 0 0;
+    text-align: center;
+    padding: 12px;
+  }
+
+  /* 手机上二级菜单改为常显（父级不可 hover） */
+  .hx-no-shell .nav-menu {
+    display: block;
+    position: static;
+    margin: 0 0 4px;
+    padding: 0 0 0 12px;
+    border: 0;
+    box-shadow: none;
+    background: none;
+    min-width: 0;
+  }
+
+  .hx-no-shell .nav-menu a {
+    padding: 9px 6px;
+    font-size: 13.5px;
+    color: var(--txt3, #6e6e6e);
+  }
+}
+
+/* ---------- 通用小件：eyebrow / btn / 代码 ---------- */
+.hx-no-shell .eyebrow {
+  display: inline-block;
+  margin: 0 0 12px;
+  padding: 5px 11px;
+  font-family: var(--hx-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  color: var(--blue, #2563eb);
+  background: var(--blue-soft, rgba(37, 99, 235, .10));
+  border-radius: 999px;
+}
+
+.hx-no-shell .btn-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 26px;
+}
+
+.hx-no-shell .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  transition: background .16s ease, color .16s ease, border-color .16s ease;
+}
+
+.hx-no-shell .btn-primary {
+  background: var(--blue, #2563eb);
+  border-color: var(--blue, #2563eb);
+  color: #fff;
+}
+
+.hx-no-shell .btn-primary:hover { background: #1d4ed8; border-color: #1d4ed8; }
+
+.hx-no-shell .btn-ghost {
+  background: var(--card, #fff);
+  border-color: var(--line2, #c9c9c2);
+  color: var(--txt2, #3d3d3d);
+}
+
+.hx-no-shell .btn-ghost:hover {
+  border-color: var(--blue, #2563eb);
+  color: var(--blue, #2563eb);
+}
+
+.hx-no-shell .btn:focus-visible {
+  outline: 2px solid var(--blue, #2563eb);
+  outline-offset: 2px;
+}
+
+/* 行内 code：站点 CSS 里定义了，缺失时补上 */
+.hx-no-shell .hx code {
+  font-family: var(--hx-mono);
+  font-size: .88em;
+  background: var(--blue-soft, rgba(37, 99, 235, .10));
+  color: var(--blue, #2563eb);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* ---------- 页脚 ---------- */
+.hx-no-shell .site-footer {
+  margin-top: 0;
+  padding: 48px 0 28px;
+  background: var(--bg2, #f2f2ef);
+  border-top: 1px solid var(--line, #e4e4e0);
+  font-size: 14px;
+  color: var(--txt2, #3d3d3d);
+}
+
+.hx-no-shell .footer-v2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 36px;
+}
+
+.hx-no-shell .footer-v2__name {
+  display: block;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--txt, #0a0a0a);
+  margin-bottom: 6px;
+}
+
+.hx-no-shell .footer-v2__tagline {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--txt3, #6e6e6e);
+}
+
+.hx-no-shell .footer-v2__contact,
+.hx-no-shell .footer-v2__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.hx-no-shell .footer-v2__contact { display: grid; gap: 7px; }
+
+.hx-no-shell .contact-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.hx-no-shell .contact-row__k {
+  flex: none;
+  width: 46px;
+  color: var(--txt3, #6e6e6e);
+  font-size: 12px;
+}
+
+.hx-no-shell .footer-v2 a {
+  color: var(--txt2, #3d3d3d);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line2, #c9c9c2);
+}
+
+.hx-no-shell .footer-v2 a:hover {
+  color: var(--blue, #2563eb);
+  border-bottom-color: var(--blue, #2563eb);
+}
+
+.hx-no-shell .footer-v2__label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  color: var(--txt3, #6e6e6e);
+  text-transform: uppercase;
+}
+
+.hx-no-shell .footer-v2__list--nav { display: grid; gap: 7px; font-size: 13px; }
+
+.hx-no-shell .footer-v2__meta {
+  margin-top: 34px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line, #e4e4e0);
+}
+
+.hx-no-shell .footer-v2__list--meta {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--txt3, #6e6e6e);
+}
+
+.hx-no-shell .footer-v2__base {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line, #e4e4e0);
+  font-size: 12px;
+  color: var(--txt3, #6e6e6e);
+}
+
+@media (max-width: 720px) {
+  .hx-no-shell .footer-v2 { grid-template-columns: 1fr; gap: 26px; }
+  .hx-no-shell .footer-v2__base { flex-direction: column; gap: 6px; }
+}
+
+/* ---------- 深色兜底 ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]).hx-no-shell body { background: #0d0d0f; color: #f2f2f0; }
+  :root:not([data-theme="light"]).hx-no-shell .site-nav,
+  :root:not([data-theme="light"]).hx-no-shell .nav-menu,
+  :root:not([data-theme="light"]).hx-no-shell .btn-ghost { background: #141418; border-color: #2a2a31; }
+  :root:not([data-theme="light"]).hx-no-shell .site-footer { background: #16161a; border-color: #2a2a31; }
+  :root:not([data-theme="light"]).hx-no-shell .nav-brand { color: #f2f2f0; }
+}
+
+:root[data-theme="dark"].hx-no-shell body { background: #0d0d0f; color: #f2f2f0; }
+:root[data-theme="dark"].hx-no-shell .site-nav,
+:root[data-theme="dark"].hx-no-shell .nav-menu,
+:root[data-theme="dark"].hx-no-shell .btn-ghost { background: #141418; border-color: #2a2a31; }
+:root[data-theme="dark"].hx-no-shell .site-footer { background: #16161a; border-color: #2a2a31; }
+:root[data-theme="dark"].hx-no-shell .nav-brand { color: #f2f2f0; }
