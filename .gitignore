@@ -43,3 +43,7 @@ artifacts/shot-*.png
 # Local preview screenshots (~2 MB). The portfolio page itself is kept in
 # deliverable/; these are just render checks of it.
 preview/*.png
+
+# Lock file produced locally by 'uv run' while verifying the 3.11 build.
+# The package pins nothing, so there is nothing to lock.
+uv.lock
