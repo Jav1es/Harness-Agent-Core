@@ -8,14 +8,16 @@
 
 **零运行时依赖 · 完全离线可跑 · 无真实密钥 · `pip install -e .` 即可用。**
 
+[![ci](https://github.com/Jav1es/Harness-Agent-Core/actions/workflows/ci.yml/badge.svg)](https://github.com/Jav1es/Harness-Agent-Core/actions/workflows/ci.yml)
 [![tests](https://img.shields.io/badge/tests-597%20passed-brightgreen)]()
 [![mutants](https://img.shields.io/badge/mutants-82%2F82%20killed-brightgreen)]()
 [![mypy](https://img.shields.io/badge/mypy-strict-blue)]()
 [![deps](https://img.shields.io/badge/runtime%20deps-0-blue)]()
-[![python](https://img.shields.io/badge/python-3.11%2B-blue)]()
+[![python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue)]()
 [![license](https://img.shields.io/badge/license-MIT-green)]()
 
-> 徽章上的数字来自本仓库的真实运行结果，不是手工填的。复现命令见[验收](#验收)。
+> 第一枚徽章是 GitHub Actions 的真实状态（3.11 + 3.12 + 独立 wheel 安装）。
+> 其余数字来自本仓库的真实运行结果，复现命令见[验收](#验收)。
 
 ```
 Frontier Model  ⇄  Harness Layer  ⇄  Deterministic Business System
