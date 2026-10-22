@@ -16,10 +16,19 @@ import textwrap
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+# This script imports harness_core itself further down. Running it from anywhere but
+# the repo root would fail unless the root is importable, so make it explicit rather
+# than depending on the editable install being present.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 INJECT = textwrap.dedent(
     """
     import sys
+    # ``python -c`` puts the *current directory* first on sys.path. Run from anywhere
+    # other than the repo root and that entry shadows the installed package, so the
+    # import fails for a reason unrelated to the gate. Pin the repo root explicitly.
+    sys.path.insert(0, {root!r})
     from harness_core import cli
     from harness_core.engine import HarnessRunResult
     from harness_core.state import RunStatus
@@ -61,7 +70,7 @@ def main() -> int:
         print(good.stdout[-2000:])
         print(good.stderr[-2000:])
 
-    bad = run([sys.executable, "-c", INJECT])
+    bad = run([sys.executable, "-c", INJECT.format(root=str(ROOT))])
     print(f"[gate] injected-failure eval exit code = {bad.returncode} (expected 1)")
     if bad.returncode != 1:
         failures += 1

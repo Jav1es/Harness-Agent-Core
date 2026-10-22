@@ -26,7 +26,10 @@ stdio = ["mcp>=1.0"]
 # Opt-in control-flow backend. Not installed by default: the package must stay
 # importable and fully testable with zero dependencies.
 langgraph = ["langgraph>=0.2"]
-dev = ["pytest>=8.0", "PyYAML>=6.0"]
+# ``dev`` includes langgraph so CI exercises the LangGraph driver and the
+# interrupt() tests. Without it ~57 tests silently skip, and a green CI run would
+# be reporting on a smaller suite than the README claims.
+dev = ["pytest>=8.0", "PyYAML>=6.0", "mypy>=1.8", "pyflakes>=3.0", "langgraph>=0.2"]
 
 [project.scripts]
 harness-core = "harness_core.cli:main"

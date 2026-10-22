@@ -8,8 +8,9 @@ name: harness-core
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   test:
@@ -31,12 +32,22 @@ jobs:
         run: pytest -q
 
       - name: Type check (strict)
-        run: |
-          pip install mypy
-          mypy harness_core --ignore-missing-imports --strict
+        run: mypy harness_core --ignore-missing-imports --strict
+
+      - name: Lint
+        run: pyflakes harness_core tests
 
       - name: Scenario suite (CI gate)
         run: harness-core eval --json eval-report.json
+
+      - name: Offline guarantee
+        run: python artifacts/audit_offline.py
+
+      - name: Eval exit-code contract
+        run: python artifacts/verify_eval_gate.py
+
+      - name: Secret-scan allowlist cannot be widened
+        run: python artifacts/verify_secret_allowlist.py
 
       - name: Both loop drivers agree
         run: |
