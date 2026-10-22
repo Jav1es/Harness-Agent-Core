@@ -747,7 +747,7 @@ python -m pyflakes harness_core tests                            # 0 warnings
 harness-core eval                  # 10/10 scenarios, exit 0
 ```
 
-再跑四个独立的验收脚本：
+再跑五个独立的验收脚本：
 
 ```bash
 python artifacts/mutation_check.py          # 82/82 mutants killed
@@ -755,6 +755,7 @@ python artifacts/audit_offline.py           # 静态+运行时离线证明
 python artifacts/verify_eval_gate.py        # 退出码契约
 python artifacts/verify_secret_allowlist.py # 密钥扫描豁免不能被放宽
 python artifacts/verify_streaming_gain.py   # 流式 vs 读到底的耗时对比
+python artifacts/verify_py311.py            # 用真实 3.11 编译全部源码
 ```
 
 **为什么要做变异测试**：597 个通过的用例不能证明测试有效。变异检查往源码里植入 82 个真实 bug，
@@ -762,6 +763,13 @@ python artifacts/verify_streaming_gain.py   # 流式 vs 读到底的耗时对比
 
 `artifacts/mutation_check.py` 会单独报告 `SKIPPED`（锚点漂移），**不把它算进「全部杀死」**——
 一个显示「全部通过」的摘要如果混进了没跑的项，验证本身就失去可信度。
+
+**为什么 `verify_py311.py` 要用真解释器**：第一版用 `ast.parse(feature_version=(3, 11))`，
+在 3.12 上对「f-string 表达式里带反斜杠」这个真实 bug **返回通过**——`feature_version`
+只管语法特性开关，不回退解析器的宽容度。一个在 CI 实际炸掉的写法上报告 OK 的检查器，
+比没有检查器更糟：它制造信心。
+
+CI 在 3.11 与 3.12 上各跑一遍完整套件，所以版本兼容不是靠声明，是靠实跑。
 
 ## 许可
 

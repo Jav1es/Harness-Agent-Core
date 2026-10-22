@@ -554,9 +554,13 @@ def _print_eval_table(outcomes: Sequence[Any], stream: Any) -> None:
             file=stream,
         )
         if not outcome.passed:
+            # The escape is hoisted out of the f-string on purpose: Python 3.11
+            # rejects a backslash inside an f-string expression part (PEP 701 only
+            # landed in 3.12), and this package claims 3.11+ support.
+            failed_label = paint("failed check:", "\033[31m")
             for check_name, ok in outcome.checks:
                 if not ok:
-                    print(f"      {paint('failed check:', '\033[31m')} {check_name}", file=stream)
+                    print(f"      {failed_label} {check_name}", file=stream)
             if outcome.failure_reason:
                 print(f"      reason: {outcome.failure_reason}", file=stream)
     print("  " + "-" * 74, file=stream)

@@ -49,6 +49,12 @@ jobs:
       - name: Secret-scan allowlist cannot be widened
         run: python artifacts/verify_secret_allowlist.py
 
+      # The 3.11 leg already runs the real suite, so this is the local fast path.
+      # Kept in CI because it is the check a contributor can run before pushing.
+      - name: Compile on the oldest supported interpreter
+        if: matrix.python-version == '3.11'
+        run: python artifacts/verify_py311.py --python python3.11
+
       - name: Both loop drivers agree
         run: |
           harness-core run "Settle order ORD-1001" --driver while
